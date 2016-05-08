@@ -17,6 +17,14 @@ The following are the main flags that can be used with fridump:
       -s, --strings      run strings on all dump files. Saved in output dir.
       --max-size bytes   maximum size of dump file in bytes (def: 20971520)
 
+Installation
+---
+To install Fridump you just need to clone it from git and run it:
+
+      git clone https://github.com/Nightbringer21/fridump.git
+            
+      python fridump.py -h
+            
 Pre-requisites
 ---
 To use fridump you need to have frida installed on your python environment and frida-server on the device you are trying to dump the memory from.
@@ -30,7 +38,7 @@ For iOS, installation instructions can be found [here](http://www.frida.re/docs/
 
 For Android, installation instructions can be found [here](http://www.frida.re/docs/android/).
 
-Note: On Android devices, make sure that the frida-server binary is running as server!
+Note: On Android devices, make sure that the frida-server binary is running as root!
 
 Disclaimer
 ---
