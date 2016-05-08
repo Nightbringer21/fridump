@@ -3,6 +3,11 @@ Fridump (v0.1) is an open source memory dumping tool, primarily aimed to penetra
 
 Usage
 ---
+
+How to:
+
+      fridump [-h] [-o dir] [-u] [-v] [-r] [-s] [--max-size bytes] process
+
 The following are the main flags that can be used with fridump:
 
       positional arguments:
@@ -16,6 +21,14 @@ The following are the main flags that can be used with fridump:
       -r, --read-only    dump read-only parts of memory. More data, more errors
       -s, --strings      run strings on all dump files. Saved in output dir.
       --max-size bytes   maximum size of dump file in bytes (def: 20971520)
+      
+Examples:
+
+      fridump -u Safari   -   Dump the memory of an iOS device associated with the Safari app
+      fridump -u -s com.example.WebApp   -  Dump the memory of an Android device and run strings on all dump files
+      fridump -r -o [full_path]  -  Dump the memory of a local application and save it to the specified directory
+      
+More examples can be found [here]()
 
 Installation
 ---
