@@ -51,4 +51,5 @@ This tool has been tested on a Windows 7 and a Mac OS X laptop, dumping the memo
 * a Windows 7 laptop.
  
 Therefore, if this tool is not working for you, I apologise and I will try to fix it.
+
 Any suggestions and comments are welcome!
