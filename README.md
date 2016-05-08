@@ -44,7 +44,8 @@ Disclaimer
 ---
 * This is version 0.1 of the software, so I expect some bugs to be present
 * I am not a developer, so my coding skills might not be the best
-* This tool has been tested on a Windows 7 and a Mac OS X laptop, dumping the memory of:
+
+This tool has been tested on a Windows 7 and a Mac OS X laptop, dumping the memory of:  
 * an iPad Air 2 running iOS 8.2
 * a Galaxy Tab running Cyanogenmod 4.4.4
 * a Windows 7 laptop.
