@@ -21,7 +21,14 @@ The following are the main flags that can be used with fridump:
       -r, --read-only    dump read-only parts of memory. More data, more errors
       -s, --strings      run strings on all dump files. Saved in output dir.
       --max-size bytes   maximum size of dump file in bytes (def: 20971520)
-      
+
+To find the name of a local process, you can use:
+
+      frida-ps
+For a process that is running on a USB connected device, you can use:
+
+      frida-ps -U
+
 Examples:
 
       fridump -u Safari   -   Dump the memory of an iOS device associated with the Safari app
