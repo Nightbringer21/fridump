@@ -35,7 +35,7 @@ Examples:
       fridump -u -s com.example.WebApp   -  Dump the memory of an Android device and run strings on all dump files
       fridump -r -o [full_path]  -  Dump the memory of a local application and save it to the specified directory
       
-More examples can be found [here]()
+More examples can be found [here](http://pentestcorner.com/introduction-to-fridump/)
 
 Installation
 ---
