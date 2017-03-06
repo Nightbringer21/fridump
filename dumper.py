@@ -12,14 +12,14 @@ def dump_to_file(session,base,size,error,directory):
                 f.close()
                 return error
         except:
-               print "Oops, memory access violation!"
+               print("Oops, memory access violation!")
 
                return error
 
 #Read bytes that are bigger than the max_size value, split them into chunks and save them to a file
 
 def splitter(session,base,size,max_size,error,directory):
-        times = size/max_size
+        times = int(size/max_size)
         diff = size % max_size
         if diff is 0:
             logging.debug("Number of chunks:"+str(times+1))
