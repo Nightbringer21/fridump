@@ -7,6 +7,11 @@ import dumper
 import utils
 import argparse
 import logging
+from frida.application import Reactor
+import threading
+import unicodedata
+import re
+from itertools import chain
 
 logo = """
         ______    _     _
@@ -37,6 +42,8 @@ def MENU():
                         help='run strings on all dump files. Saved in output dir.')
     parser.add_argument('--max-size', type=int, help='maximum size of dump file in bytes (def: 20971520)',
                         metavar="bytes")
+    parser.add_argument('--hook', type=str, action='append', help='ApiResolver statements specifying hooks where dumps will be performed')
+    parser.add_argument('-n', '--count', type=int, help='maximum number of dumps to take.', default=1)
     args = parser.parse_args()
     return args
 
@@ -89,44 +96,171 @@ else:
         print("Creating directory...")
         os.makedirs(DIRECTORY)
 
+def safe_filename(value):
+    import unicodedata
+    value = unicodedata.normalize('NFKD', value)
+    value = re.sub('[^\w\s-]', '', value).strip().lower()
+    value = re.sub('[-\s]+', '-', value)
+    return value
+
 mem_access_viol = ""
 
-print("Starting Memory dump...")
+done = threading.Event()
+reactor = Reactor(lambda reactor: done.wait())
 
-Memories = session.enumerate_ranges(PERMS)
+dump_count = 0
 
-if arguments.max_size is not None:
-    MAX_SIZE = arguments.max_size
+def do_dump(trigger_name):
+    global MAX_SIZE
+    global mem_access_viol
+    global dump_count
 
-i = 0
-l = len(Memories)
+    print("Starting Memory dump...")
+    Memories = session.enumerate_ranges(PERMS)
 
-# Performing the memory dump
-for memory in Memories:
-    base = memory.base_address
-    logging.debug("Base Address: " + str(hex(base)))
-    logging.debug("")
-    size = memory.size
-    logging.debug("Size: " + str(size))
-    if size > MAX_SIZE:
-        logging.debug("Too big, splitting the dump into chunks")
-        mem_access_viol = dumper.splitter(session, base, size, MAX_SIZE, mem_access_viol, DIRECTORY)
-        continue
-    mem_access_viol = dumper.dump_to_file(session, base, size, mem_access_viol, DIRECTORY)
-    i += 1
-    utils.printProgress(i, l, prefix='Progress:', suffix='Complete', bar=50)
-print()
+    if arguments.max_size is not None:
+        MAX_SIZE = arguments.max_size
 
-# Run Strings if selected
-
-if STRINGS:
-    files = os.listdir(DIRECTORY)
     i = 0
-    l = len(files)
-    print("Running strings on all files:")
-    for f1 in files:
-        utils.strings(f1, DIRECTORY)
+    l = len(Memories)
+
+    trigger_name = trigger_name.decode('utf-8')
+    dump_count = dump_count + 1
+    dump_dir = os.path.join(DIRECTORY, safe_filename("%d-%s" % (dump_count, trigger_name)))
+
+    if arguments.count == 1:
+        dump_dir = DIRECTORY
+
+    if not os.path.exists(dump_dir):
+        print("Creating directory %s..." % dump_dir)
+        os.makedirs(dump_dir)
+
+    # Performing the memory dump
+    for memory in Memories:
+        base = memory.base_address
+        logging.debug("Base Address: " + str(hex(base)))
+        logging.debug("")
+        size = memory.size
+        logging.debug("Size: " + str(size))
+        if size > MAX_SIZE:
+            logging.debug("Too big, splitting the dump into chunks")
+            mem_access_viol = dumper.splitter(session, base, size, MAX_SIZE, mem_access_viol, dump_dir)
+            continue
+        mem_access_viol = dumper.dump_to_file(session, base, size, mem_access_viol, dump_dir)
         i += 1
         utils.printProgress(i, l, prefix='Progress:', suffix='Complete', bar=50)
-print("Finished!")
-eval(input('Press Enter to exit...'))
+    print()
+
+    # Run Strings if selected
+
+    if STRINGS:
+        files = os.listdir(dump_dir)
+        i = 0
+        l = len(files)
+        print("Running strings on all files:")
+        for f1 in files:
+            utils.strings(f1, dump_dir)
+            i += 1
+            utils.printProgress(i, l, prefix='Progress:', suffix='Complete', bar=50)
+
+    if dump_count >= arguments.count:
+        reactor.stop()
+        done.set()
+        print("Finished!")
+
+jscode = """
+var donotpassgo = function() {
+    var waiting = true;
+    var op = recv('go', function(dummy) {});
+    op.wait();
+}
+
+function unicodeStringToTypedArray(str) {
+    var binary_str = encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(match, p1) {
+        return String.fromCharCode('0x' + p1);
+    });
+    var buf = new Uint8Array(binary_str.length);
+    for (var i=0, strLen=binary_str.length; i<strLen; i++) {
+        buf[i] = binary_str.charCodeAt(i);
+    }
+    return buf;
+}
+
+var stop_hostdump = function(name) {
+    send('req_host_dump', unicodeStringToTypedArray(name) );
+    donotpassgo();
+}
+
+var resolver = new ApiResolver('module');
+
+
+var hookit = function(tp_pair) {
+    target = tp_pair.payload;
+    found = false;
+    var resolved = {};
+
+    resolver.enumerateMatches(target, {
+        onMatch: function(match) {
+            if (match.address.toString() in resolved) return;
+
+            console.log("hooking " + match.name + " for dumps")
+            try {
+                resolved[match.address.toString()] = Interceptor.attach(match.address, {
+                    onEnter: function(args) {
+                        stop_hostdump(match.name);
+                    }
+                });
+                found = true;
+            } catch (e) {
+                console.log("Skipping " + match.name + "@" + match.address + ": " + e.message);
+            }
+        },
+        onComplete: function() {
+            if (!found) console.log("no match found: " + target);
+        }
+    });
+
+    recv('ahook', hookit);
+}
+
+recv('ahook', hookit);
+
+/* loopback message to initiate dump */
+recv('adump', function(tp_pair) {
+    stop_hostdump('manual'); //causes hang in session.enumerate_ranges(...) above
+})
+"""
+
+script = session.create_script(jscode)
+def process_message(message, data):
+    if message.get('type') != 'send':
+        print(message)
+        exit(0)
+
+    if message.get('payload') == 'req_host_dump':
+        do_dump(data)
+        script.post({ 'type': 'go'})
+
+def on_message(message, data):
+    reactor.schedule(lambda: process_message(message, data))
+
+script.on('message', on_message)
+script.load()
+
+def initiate_dump():
+    #initiate a dump
+    script.post({ 'type': 'adump' })
+
+if not arguments.hook is None:
+    for hook in arguments.hook:
+        script.post({ 'type': 'ahook', 'payload': hook })
+else:
+    if arguments.count > 1:
+        print("WARNING: ignoring --count=%d, only one capture supported when there are no --hooks" % arguments.count)
+        arguments.count = 1
+    reactor.schedule(initiate_dump);
+
+reactor.run()
+
+session.detach()
+sys.exit(0)

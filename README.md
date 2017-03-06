@@ -21,6 +21,8 @@ The following are the main flags that can be used with fridump:
       -r, --read-only    dump read-only parts of memory. More data, more errors
       -s, --strings      run strings on all dump files. Saved in output dir.
       --max-size bytes   maximum size of dump file in bytes (def: 20971520)
+      --hook pattern     ApiResolver pattern specifying functions to hook with memory dumping action
+      -n, --count        maximum number of dumps to take
 
 To find the name of a local process, you can use:
 
@@ -34,7 +36,8 @@ Examples:
       fridump -u Safari   -   Dump the memory of an iOS device associated with the Safari app
       fridump -u -s com.example.WebApp   -  Dump the memory of an Android device and run strings on all dump files
       fridump -r -o [full_path]  -  Dump the memory of a local application and save it to the specified directory
-      
+      fridump -n 3 --hook 'imports:*!write' - dump memory whenever an imported 'write' function is executed, limit to 3 times.
+
 More examples can be found [here](http://pentestcorner.com/introduction-to-fridump/)
 
 Installation
