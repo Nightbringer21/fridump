@@ -41,7 +41,7 @@ def MENU():
     return args
 
 
-print logo
+print(logo)
 arguments = MENU()
 
 # Define Configurations
@@ -52,6 +52,7 @@ DEBUG_LEVEL = logging.INFO
 STRINGS = arguments.strings
 MAX_SIZE = 20971520
 PERMS = 'rw-'
+pid = "test"
 
 if arguments.read_only:
     PERMS = 'r--'
@@ -68,7 +69,7 @@ try:
     else:
         session = frida.attach(APP_NAME)
 except:
-    print "Can't connect to App. Have you connected the device?"
+    print("Can't connect to App. Have you connected the device?")
     sys.exit(0)
 
 
@@ -76,22 +77,22 @@ except:
 if arguments.out is not None:
     DIRECTORY = arguments.out
     if os.path.isdir(DIRECTORY):
-        print "Output directory is set to: " + DIRECTORY
+        print("Output directory is set to: " + DIRECTORY)
     else:
-        print "The selected output directory does not exist!"
+        print("The selected output directory does not exist!")
         sys.exit(1)
 
 else:
-    print "Current Directory: " + str(os.getcwd())
+    print("Current Directory: " + str(os.getcwd()))
     DIRECTORY = os.path.join(os.getcwd(), "dump")
-    print "Output directory is set to: " + DIRECTORY
+    print("Output directory is set to: " + DIRECTORY)
     if not os.path.exists(DIRECTORY):
-        print "Creating directory..."
+        print("Creating directory...")
         os.makedirs(DIRECTORY)
 
 mem_access_viol = ""
 
-print "Starting Memory dump..."
+print("Starting Memory dump...")
 
 Memories = session.enumerate_ranges(PERMS)
 
@@ -123,10 +124,11 @@ if STRINGS:
     files = os.listdir(DIRECTORY)
     i = 0
     l = len(files)
-    print "Running strings on all files:"
+    print("Running strings on all files:")
     for f1 in files:
         utils.strings(f1, DIRECTORY)
         i += 1
         utils.printProgress(i, l, prefix='Progress:', suffix='Complete', bar=50)
-print "Finished!"
-raw_input('Press Enter to exit...')
+
+sys.exit("Finished! Press Ctrl+C")
+#input('Press Enter to exit...')
