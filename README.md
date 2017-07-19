@@ -50,14 +50,14 @@ To install Fridump you just need to clone it from git and run it:
 
       git clone https://github.com/Nightbringer21/fridump.git
             
-      python fridump.py -h
+      python3 fridump.py -h
             
 Pre-requisites
 ---
 To use fridump you need to have frida installed on your python environment and frida-server on the device you are trying to dump the memory from.
 The easiest way to install frida on your python is using pip:
 
-    pip install frida
+    pip3 install frida
     
 More information on how to install Frida can be found [here](http://www.frida.re/docs/installation/)
 
