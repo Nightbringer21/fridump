@@ -1,3 +1,10 @@
+# Disclaimer 
+
+This repo is just a fork from https://github.com/Nightbringer21/fridump/ and is only applying a fix so that Fridump is working with Python3.
+
+It was tested with Python 3.6 on macOS 10.12.
+
+
 # Fridump
 Fridump (v0.1) is an open source memory dumping tool, primarily aimed to penetration testers and developers. Fridump is using the Frida framework to dump accessible memory addresses from any platform supported. It can be used from a Windows, Linux or Mac OS X system to dump the memory of an iOS, Android or Windows application.
 
@@ -43,14 +50,14 @@ To install Fridump you just need to clone it from git and run it:
 
       git clone https://github.com/Nightbringer21/fridump.git
             
-      python fridump.py -h
+      python3 fridump.py -h
             
 Pre-requisites
 ---
 To use fridump you need to have frida installed on your python environment and frida-server on the device you are trying to dump the memory from.
 The easiest way to install frida on your python is using pip:
 
-    pip install frida
+    pip3 install frida
     
 More information on how to install Frida can be found [here](http://www.frida.re/docs/installation/)
 

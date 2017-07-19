@@ -12,7 +12,7 @@ def dump_to_file(session,base,size,error,directory):
                 f.close()
                 return error
         except:
-               print "Oops, memory access violation!"
+               print("Oops, memory access violation!")
 
                return error
 
