@@ -1,11 +1,20 @@
-import sys
-import string
-import logging
 import os
 import re
+import sys
+
+from io import open
+from mmap import mmap, PROT_READ
+
+if '__enter__' not in mmap.__dict__:
+    class mmap(mmap):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            self.close()
 
 # Progress bar function
-def printProgress (times, total, prefix ='', suffix ='', decimals = 2, bar = 100):
+def printProgress(times, total, prefix='', suffix='', decimals=2, bar=100):
     filled = int(round(bar * times / float(total)))
     percents = round(100.00 * (times / float(total)), decimals)
     bar = '#' * filled + '-' * (bar - filled)
@@ -16,13 +25,23 @@ def printProgress (times, total, prefix ='', suffix ='', decimals = 2, bar = 100
 
 
 # A very basic implementations of Strings
-def strings(filename,directory, min=4):
-    strings_file = os.path.join(directory,"strings.txt")
-    path = os.path.join(directory,filename)
+def strings(filename, directory, min=6):
+    path = os.path.join(directory, filename)
 
-    str_list = re.findall("[A-Za-z0-9/\-:;.,_$%'!()[\]<> \#]+",open(path,"rb").read())
-    with open(strings_file,"ab") as st:
-        for string in str_list:
-            if len(string)>min:
-                logging.debug(string)
-                st.write(string+"\n")
+    with open(path, 'rb') as f, mmap(f.fileno(), 0, access=PROT_READ) as m:
+
+        for match in re.finditer(('([\w/]{{{}}}[\w/]*)'.format(min)).encode(), m):
+            yield match.group(0).decode("utf-8")
+
+
+def find_dump_strings(directory):
+    files = os.listdir(directory)
+    strings_file = os.path.join(directory, "strings.txt")
+
+    l = len(files) - 1
+    print("Running strings on all files:")
+    with open(strings_file, "wb") as st:
+        for idx, f1 in enumerate(files):
+            if f1.endswith("_dump.data"):
+                st.write("\n".join(strings(f1, directory)).encode())
+                printProgress(idx, l, prefix='Progress:', suffix='Complete', bar=50)
