@@ -27,21 +27,26 @@ def MENU():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=textwrap.dedent(""))
 
-    parser.add_argument('process', help='the process that you will be injecting to')
-    parser.add_argument('-o', '--out', type=str, help='provide full output directory path. (def: \'dump\')',
-                        metavar="dir")
-    parser.add_argument('-u', '--usb', action='store_true', help='device connected over usb')
-    parser.add_argument('-v', '--verbose', action='store_true', help='verbose')
-    parser.add_argument('-r','--read-only',action='store_true', help="dump read-only parts of memory. More data, more errors")
+    parser.add_argument('process',
+                        help='the process that you will be injecting to')
+    parser.add_argument('-o', '--out', type=str, metavar="dir",
+                        help='provide full output directory path. (def: \'dump\')')
+    parser.add_argument('-U', '--usb', action='store_true',
+                        help='device connected over usb')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='verbose')
+    parser.add_argument('-r', '--read-only', action='store_true',
+                        help="dump read-only parts of memory. More data, more errors")
     parser.add_argument('-s', '--strings', action='store_true',
                         help='run strings on all dump files. Saved in output dir.')
-    parser.add_argument('--max-size', type=int, help='maximum size of dump file in bytes (def: 20971520)',
-                        metavar="bytes")
+    parser.add_argument('--max-size', type=int, metavar="bytes",
+                        help='maximum size of dump file in bytes (def: 20971520)')
     args = parser.parse_args()
     return args
 
 
-print logo
+print(logo)
+
 arguments = MENU()
 
 # Define Configurations
@@ -60,6 +65,7 @@ if arguments.verbose:
     DEBUG_LEVEL = logging.DEBUG
 logging.basicConfig(format='%(levelname)s:%(message)s', level=DEBUG_LEVEL)
 
+
 # Start a new Session
 session = None
 try:
@@ -67,55 +73,77 @@ try:
         session = frida.get_usb_device().attach(APP_NAME)
     else:
         session = frida.attach(APP_NAME)
-except:
-    print "Can't connect to App. Have you connected the device?"
-    sys.exit(0)
+except Exception as e:
+    print(str(e))
+    sys.exit()
 
 
 # Selecting Output directory
 if arguments.out is not None:
     DIRECTORY = arguments.out
     if os.path.isdir(DIRECTORY):
-        print "Output directory is set to: " + DIRECTORY
+        print("Output directory is set to: " + DIRECTORY)
     else:
-        print "The selected output directory does not exist!"
+        print("The selected output directory does not exist!")
         sys.exit(1)
 
 else:
-    print "Current Directory: " + str(os.getcwd())
+    print("Current Directory: " + str(os.getcwd()))
     DIRECTORY = os.path.join(os.getcwd(), "dump")
-    print "Output directory is set to: " + DIRECTORY
+    print("Output directory is set to: " + DIRECTORY)
     if not os.path.exists(DIRECTORY):
-        print "Creating directory..."
+        print("Creating directory...")
         os.makedirs(DIRECTORY)
 
 mem_access_viol = ""
 
-print "Starting Memory dump..."
+print("Starting Memory dump...")
 
-Memories = session.enumerate_ranges(PERMS)
+script = session.create_script(
+    """'use strict';
+
+    rpc.exports = {
+      enumerateRanges: function (prot) {
+        return Process.enumerateRangesSync(prot);
+      },
+      readMemory: function (address, size) {
+        return Memory.readByteArray(ptr(address), size);
+      }
+    };
+
+    """)
+script.on("message", utils.on_message)
+script.load()
+
+agent = script.exports
+ranges = agent.enumerate_ranges(PERMS)
 
 if arguments.max_size is not None:
     MAX_SIZE = arguments.max_size
 
 i = 0
-l = len(Memories)
+l = len(ranges)
 
 # Performing the memory dump
-for memory in Memories:
-    base = memory.base_address
-    logging.debug("Base Address: " + str(hex(base)))
+for range in ranges:
+    base = range["base"]
+    size = range["size"]
+
+    logging.debug("Base Address: " + str(base))
     logging.debug("")
-    size = memory.size
     logging.debug("Size: " + str(size))
+
+
     if size > MAX_SIZE:
         logging.debug("Too big, splitting the dump into chunks")
-        mem_access_viol = dumper.splitter(session, base, size, MAX_SIZE, mem_access_viol, DIRECTORY)
+        mem_access_viol = dumper.splitter(
+            agent, base, size, MAX_SIZE, mem_access_viol, DIRECTORY)
         continue
-    mem_access_viol = dumper.dump_to_file(session, base, size, mem_access_viol, DIRECTORY)
+    mem_access_viol = dumper.dump_to_file(
+        agent, base, size, mem_access_viol, DIRECTORY)
     i += 1
     utils.printProgress(i, l, prefix='Progress:', suffix='Complete', bar=50)
-print
+print("")
 
 # Run Strings if selected
 
@@ -123,10 +151,9 @@ if STRINGS:
     files = os.listdir(DIRECTORY)
     i = 0
     l = len(files)
-    print "Running strings on all files:"
+    print("Running strings on all files:")
     for f1 in files:
         utils.strings(f1, DIRECTORY)
         i += 1
         utils.printProgress(i, l, prefix='Progress:', suffix='Complete', bar=50)
-print "Finished!"
-raw_input('Press Enter to exit...')
+print("Finished!")

@@ -3,22 +3,22 @@ import logging
 
 # Reading bytes from session and saving it to a file
 
-def dump_to_file(session,base,size,error,directory):
+def dump_to_file(agent,base,size,error,directory):
         try:
-                filename = str(hex(base))+'_dump.data'
-                dump =  session.read_bytes(base, size)
+                filename = str(base)+'_dump.data'
+                dump =  agent.read_memory(base, size)
                 f = open(os.path.join(directory,filename), 'wb')
                 f.write(dump)
                 f.close()
                 return error
-        except:
-               print "Oops, memory access violation!"
-
-               return error
+        except Exception as e:
+            logging.debug("[!]"+str(e))
+            print("Oops, memory access violation!")
+            return error
 
 #Read bytes that are bigger than the max_size value, split them into chunks and save them to a file
 
-def splitter(session,base,size,max_size,error,directory):
+def splitter(agent,base,size,max_size,error,directory):
         times = size/max_size
         diff = size % max_size
         if diff is 0:
@@ -26,14 +26,14 @@ def splitter(session,base,size,max_size,error,directory):
         else:
             logging.debug("Number of chunks:"+str(times))
         global cur_base
-        cur_base = base
+        cur_base = int(base,0)
 
-        for time in range(times):
-                logging.debug("Save bytes: "+str(hex(cur_base))+" till "+str(hex(cur_base+max_size)))
-                dump_to_file(session, cur_base, max_size, error, directory)
+        for time in range(int(times)):
+                logging.debug("Save bytes: "+str(cur_base)+" till "+str(cur_base+max_size))
+                dump_to_file(agent, cur_base, max_size, error, directory)
                 cur_base = cur_base + max_size
 
         if diff is not 0:
             logging.debug("Save bytes: "+str(hex(cur_base))+" till "+str(hex(cur_base+diff)))
-            dump_to_file(session, cur_base, diff, error, directory)
+            dump_to_file(agent, cur_base, diff, error, directory)
 
