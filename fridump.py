@@ -74,7 +74,8 @@ try:
     else:
         session = frida.attach(APP_NAME)
 except Exception as e:
-    print(str(e))
+    print("Can't connect to App. Have you connected the device?")
+    logging.debug(str(e))
     sys.exit()
 
 
