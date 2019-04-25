@@ -21,7 +21,7 @@ def strings(filename, directory, min=4):
     strings_file = os.path.join(directory, "strings.txt")
     path = os.path.join(directory, filename)
     with open(path, encoding='Latin-1') as infile:
-        str_list = re.findall("[A-Za-z0-9/\-:;.,_$%'!()[\]<> \#]+", infile.read())
+        str_list = re.findall("[\x20-\x7E]+\x00", infile.read())
         with open(strings_file, "a") as st:
             for string in str_list:
                 if len(string) > min:
