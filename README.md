@@ -42,7 +42,7 @@ Installation
 To install Fridump you just need to clone it from git and run it:
 
       git clone https://github.com/Nightbringer21/fridump.git
-            
+      cd fridump
       python fridump.py -h
             
 Pre-requisites
