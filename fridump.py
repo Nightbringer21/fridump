@@ -33,6 +33,8 @@ def MENU():
                         help='provide full output directory path. (def: \'dump\')')
     parser.add_argument('-U', '--usb', action='store_true',
                         help='device connected over usb')
+    parser.add_argument('-p', '--pid', action='store_true',
+                        help='specify app for injection by pid')
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='verbose')
     parser.add_argument('-r', '--read-only', action='store_true',
@@ -68,6 +70,12 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=DEBUG_LEVEL)
 
 # Start a new Session
 session = None
+if arguments.pid:
+    if APP_NAME.isnumeric():
+        APP_NAME = int(APP_NAME)
+    else:
+        print("Can't connect to App. PID must be a number")
+        exit()
 try:
     if USB:
         session = frida.get_usb_device().attach(APP_NAME)
