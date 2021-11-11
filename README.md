@@ -14,13 +14,14 @@ The following are the main flags that can be used with fridump:
       process            the process that you will be injecting to
 
       optional arguments:
-      -h, --help         show this help message and exit
-      -o dir, --out dir  provide full output directory path. (def: 'dump')
-      -U, --usb          device connected over usb
-      -v, --verbose      verbose
-      -r, --read-only    dump read-only parts of memory. More data, more errors
-      -s, --strings      run strings on all dump files. Saved in output dir.
-      --max-size bytes   maximum size of dump file in bytes (def: 20971520)
+      -h, --help          show this help message and exit
+      -o dir, --out dir   provide full output directory path. (def: 'dump')
+      -D id, --device id  connect to device with the given id
+      -U, --usb           device connected over usb
+      -v, --verbose       verbose
+      -r, --read-only     dump read-only parts of memory. More data, more errors
+      -s, --strings       run strings on all dump files. Saved in output dir.
+      --max-size bytes    maximum size of dump file in bytes (def: 20971520)
 
 To find the name of a local process, you can use:
 
@@ -33,6 +34,7 @@ Examples:
 
       fridump -U Safari   -   Dump the memory of an iOS device associated with the Safari app
       fridump -U -s com.example.WebApp   -  Dump the memory of an Android device and run strings on all dump files
+      fridump -D emulator-5554 com.example.WebApp   -   Dump the memory of a process in an emulated Android device
       fridump -r -o [full_path]  -  Dump the memory of a local application and save it to the specified directory
       
 More examples can be found [here](http://pentestcorner.com/introduction-to-fridump/)

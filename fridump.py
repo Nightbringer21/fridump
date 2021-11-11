@@ -31,6 +31,8 @@ def MENU():
                         help='the process that you will be injecting to')
     parser.add_argument('-o', '--out', type=str, metavar="dir",
                         help='provide full output directory path. (def: \'dump\')')
+    parser.add_argument('-D', '--device', type=str, metavar='id',
+                        help='connect to device with the given id')
     parser.add_argument('-U', '--usb', action='store_true',
                         help='device connected over usb')
     parser.add_argument('-v', '--verbose', action='store_true',
@@ -53,6 +55,7 @@ arguments = MENU()
 APP_NAME = arguments.process
 DIRECTORY = ""
 USB = arguments.usb
+DEVICE = arguments.device
 DEBUG_LEVEL = logging.INFO
 STRINGS = arguments.strings
 MAX_SIZE = 20971520
@@ -71,6 +74,8 @@ session = None
 try:
     if USB:
         session = frida.get_usb_device().attach(APP_NAME)
+    elif DEVICE:
+        session = frida.get_device(DEVICE).attach(APP_NAME)
     else:
         session = frida.attach(APP_NAME)
 except Exception as e:
