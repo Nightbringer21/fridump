@@ -21,7 +21,7 @@ def dump_to_file(agent,base,size,error,directory):
 def splitter(agent,base,size,max_size,error,directory):
         times = size/max_size
         diff = size % max_size
-        if diff is 0:
+        if diff == 0:
             logging.debug("Number of chunks:"+str(times+1))
         else:
             logging.debug("Number of chunks:"+str(times))
@@ -33,7 +33,7 @@ def splitter(agent,base,size,max_size,error,directory):
                 dump_to_file(agent, cur_base, max_size, error, directory)
                 cur_base = cur_base + max_size
 
-        if diff is not 0:
+        if diff != 0:
             logging.debug("Save bytes: "+str(hex(cur_base))+" till "+str(hex(cur_base+diff)))
             dump_to_file(agent, cur_base, diff, error, directory)
 

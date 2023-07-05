@@ -57,6 +57,7 @@ DEBUG_LEVEL = logging.INFO
 STRINGS = arguments.strings
 MAX_SIZE = 20971520
 PERMS = 'rw-'
+pid = 0
 
 if arguments.read_only:
     PERMS = 'r--'
@@ -69,11 +70,20 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=DEBUG_LEVEL)
 # Start a new Session
 session = None
 try:
+    for a in frida.get_usb_device().enumerate_applications():
+        if a.identifier == APP_NAME:
+            pid = a.pid
+            print(f"[+] Woo I found the process id : {pid}")
+            break
+    
     if USB:
-        session = frida.get_usb_device().attach(APP_NAME)
+        session = frida.get_usb_device().attach(pid)
+        print(session)
     else:
-        session = frida.attach(APP_NAME)
+        session = frida.attach(pid)
+
 except Exception as e:
+    print(e)
     print("Can't connect to App. Have you connected the device?")
     logging.debug(str(e))
     sys.exit()
