@@ -27,8 +27,7 @@ def MENU():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         description=textwrap.dedent(""))
 
-    parser.add_argument('process',
-                        help='the process that you will be injecting to')
+    parser.add_argument('-A', '--appname', help='the application name that you will be injecting to', required=False)
     parser.add_argument('-o', '--out', type=str, metavar="dir",
                         help='provide full output directory path. (def: \'dump\')')
     parser.add_argument('-U', '--usb', action='store_true',
@@ -39,6 +38,7 @@ def MENU():
                         help="dump read-only parts of memory. More data, more errors")
     parser.add_argument('-s', '--strings', action='store_true',
                         help='run strings on all dump files. Saved in output dir.')
+    parser.add_argument('-p', '--pid', help='attach direct to a process id', required=False)
     parser.add_argument('--max-size', type=int, metavar="bytes",
                         help='maximum size of dump file in bytes (def: 20971520)')
     args = parser.parse_args()
@@ -50,7 +50,7 @@ print(logo)
 arguments = MENU()
 
 # Define Configurations
-APP_NAME = arguments.process
+APP_NAME = arguments.appname
 DIRECTORY = ""
 USB = arguments.usb
 DEBUG_LEVEL = logging.INFO
@@ -70,21 +70,25 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=DEBUG_LEVEL)
 # Start a new Session
 session = None
 try:
-    for a in frida.get_usb_device().enumerate_applications():
-        if a.identifier == APP_NAME:
-            pid = a.pid
-            print(f"[+] Woo I found the process id : {pid}")
-            break
-    
-    if USB:
-        session = frida.get_usb_device().attach(pid)
-        print(session)
+    if arguments.pid is not None:
+        pid = arguments.pid
+        pass
     else:
-        session = frida.attach(pid)
+        for a in frida.get_usb_device().enumerate_applications():
+            if a.identifier == APP_NAME:
+                pid = a.pid
+                break
+        pass 
+
+    print(f"[+] attaching to process with Id of {pid}")    
+    if USB:
+        session = frida.get_usb_device().attach(int(pid))
+    else:
+        session = frida.attach(int(pid))
 
 except Exception as e:
     print(e)
-    print("Can't connect to App. Have you connected the device?")
+    print("[-] Can't connect to App. Have you connected the device?")
     logging.debug(str(e))
     sys.exit()
 
@@ -93,22 +97,22 @@ except Exception as e:
 if arguments.out is not None:
     DIRECTORY = arguments.out
     if os.path.isdir(DIRECTORY):
-        print("Output directory is set to: " + DIRECTORY)
+        print("[*] Output directory is set to: " + DIRECTORY)
     else:
-        print("The selected output directory does not exist!")
+        print("[*] The selected output directory does not exist!")
         sys.exit(1)
 
 else:
-    print("Current Directory: " + str(os.getcwd()))
+    print("[*] Current Directory: " + str(os.getcwd()))
     DIRECTORY = os.path.join(os.getcwd(), "dump")
-    print("Output directory is set to: " + DIRECTORY)
+    print("[*] Output directory is set to: " + DIRECTORY)
     if not os.path.exists(DIRECTORY):
-        print("Creating directory...")
+        print("[*] Creating directory...")
         os.makedirs(DIRECTORY)
 
 mem_access_viol = ""
 
-print("Starting Memory dump...")
+print("[+] Starting Memory dump...")
 
 script = session.create_script(
     """'use strict';
@@ -126,7 +130,7 @@ script = session.create_script(
 script.on("message", utils.on_message)
 script.load()
 
-agent = script.exports
+agent = script.exports_sync
 ranges = agent.enumerate_ranges(PERMS)
 
 if arguments.max_size is not None:
