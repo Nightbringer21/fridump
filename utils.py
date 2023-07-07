@@ -20,6 +20,7 @@ def printProgress (times, total, prefix ='', suffix ='', decimals = 2, bar = 100
 def strings(filename, directory, min=4):
     strings_file = os.path.join(directory, "strings.txt")
     path = os.path.join(directory, filename)
+    print(path)
     with open(path, encoding='Latin-1') as infile:
         str_list = re.findall("[\x20-\x7E]+\x00", infile.read())
         with open(strings_file, "a") as st:
