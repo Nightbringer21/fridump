@@ -70,13 +70,22 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=DEBUG_LEVEL)
 session = None
 try:
     if USB:
-        session = frida.get_usb_device().attach(APP_NAME)
+        logging.debug("Attempting to get USB device...")
+        device = frida.get_usb_device(timeout=5)
+        session = device.attach(APP_NAME)
     else:
+        logging.debug("Attempting to attach to process on local device...")
         session = frida.attach(APP_NAME)
+except frida.ServerNotRunningError:
+    print("Frida server is not running. Please start the frida server on the device.")
+    sys.exit(1)
+except frida.ProcessNotFoundError:
+    print(f"Process '{APP_NAME}' not found. Make sure the process is running.")
+    sys.exit(1)
 except Exception as e:
     print("Can't connect to App. Have you connected the device?")
     logging.debug(str(e))
-    sys.exit()
+    sys.exit(1)
 
 
 # Selecting Output directory
