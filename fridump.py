@@ -105,10 +105,10 @@ script = session.create_script(
 
     rpc.exports = {
       enumerateRanges: function (prot) {
-        return Process.enumerateRangesSync(prot);
+        return Process.enumerateRanges(prot);
       },
       readMemory: function (address, size) {
-        return Memory.readByteArray(ptr(address), size);
+        return ptr(address).readByteArray(size);
       }
     };
 
