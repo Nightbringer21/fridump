@@ -105,10 +105,10 @@ script = session.create_script(
 
     rpc.exports = {
       enumerateRanges: function (prot) {
-        return Process.enumerateRangesSync(prot);
+        return Process.enumerateRanges(prot);
       },
       readMemory: function (address, size) {
-        return Memory.readByteArray(ptr(address), size);
+        return ptr(address).readByteArray(size);
       }
     };
 
@@ -116,7 +116,7 @@ script = session.create_script(
 script.on("message", utils.on_message)
 script.load()
 
-agent = script.exports
+agent = script.exports_sync
 ranges = agent.enumerate_ranges(PERMS)
 
 if arguments.max_size is not None:
