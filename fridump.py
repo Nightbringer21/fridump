@@ -41,6 +41,8 @@ def MENU():
                         help='run strings on all dump files. Saved in output dir.')
     parser.add_argument('--max-size', type=int, metavar="bytes",
                         help='maximum size of dump file in bytes (def: 20971520)')
+    parser.add_argument('-a', '--anon', action='store_true',
+                        help='dump anonymous memory only')
     args = parser.parse_args()
     return args
 
@@ -57,6 +59,7 @@ DEBUG_LEVEL = logging.INFO
 STRINGS = arguments.strings
 MAX_SIZE = 20971520
 PERMS = 'rw-'
+ANON = arguments.anon
 
 if arguments.read_only:
     PERMS = 'r--'
@@ -104,11 +107,14 @@ script = session.create_script(
     """'use strict';
 
     rpc.exports = {
-      enumerateRanges: function (prot) {
-        return Process.enumerateRangesSync(prot);
+      enumerateRanges: function (prot, anon) {
+        if (anon)
+          return Process.enumerateRanges(prot).filter(range => range.file === undefined);
+        else
+          return Process.enumerateRanges(prot);
       },
       readMemory: function (address, size) {
-        return Memory.readByteArray(ptr(address), size);
+        return ptr(address).readByteArray(size);
       }
     };
 
@@ -116,8 +122,8 @@ script = session.create_script(
 script.on("message", utils.on_message)
 script.load()
 
-agent = script.exports
-ranges = agent.enumerate_ranges(PERMS)
+agent = script.exports_sync
+ranges = agent.enumerate_ranges(PERMS, ANON)
 
 if arguments.max_size is not None:
     MAX_SIZE = arguments.max_size
